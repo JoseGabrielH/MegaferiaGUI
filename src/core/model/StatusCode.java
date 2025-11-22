@@ -1,13 +1,4 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package core.model;
-
-/**
- * Enumeración para códigos de estado de respuestas del servidor
- * @author edangulo
- */
 public enum StatusCode {
     OK(200, "OK"),
     CREATED(201, "Created"),

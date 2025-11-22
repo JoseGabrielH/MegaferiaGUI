@@ -1,16 +1,9 @@
-/*
- * Archivo principal para ejecutar la aplicación
- */
 package core;
 
 import com.formdev.flatlaf.FlatDarkLaf;
 import javax.swing.UIManager;
 import core.view.MegaferiaFrame;
 
-/**
- * Clase principal que inicia la aplicación Megaferia
- * @author edangulo
- */
 public class Main {
     
     public static void main(String[] args) {
@@ -22,7 +15,6 @@ public class Main {
             System.err.println("Failed to initialize LaF");
         }
         
-        /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {

@@ -1,6 +1,3 @@
-/*
- * Almacenamiento de Libros
- */
 package core.storage;
 
 import java.util.ArrayList;
@@ -10,10 +7,6 @@ import core.model.Book;
 import core.model.Author;
 import core.model.Observer;
 
-/**
- *
- * @author edangulo
- */
 public class BookStorage {
     
     private static BookStorage instance;

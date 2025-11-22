@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package core.storage;
 
 import java.util.ArrayList;
@@ -10,10 +6,6 @@ import java.util.stream.Collectors;
 import core.model.Stand;
 import core.model.Observer;
 
-/**
- * Almacenamiento de Stands
- * @author edangulo
- */
 public class StandStorage {
     
     private static StandStorage instance;

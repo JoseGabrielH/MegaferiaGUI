@@ -1,6 +1,3 @@
-/*
- * Almacenamiento de Personas (Authors, Managers, Narrators)
- */
 package core.storage;
 
 import java.util.ArrayList;
@@ -12,10 +9,6 @@ import core.model.Narrator;
 import core.model.Observer;
 import core.model.Person;
 
-/**
- *
- * @author edangulo
- */
 public class PersonStorage {
     
     private static PersonStorage instance;
@@ -52,7 +45,6 @@ public class PersonStorage {
         }
     }
     
-    // Authors
     public void addAuthor(Author author) {
         this.authors.add(author);
         notifyObservers();
@@ -75,7 +67,6 @@ public class PersonStorage {
         return authors.stream().anyMatch(a -> a.getId() == id);
     }
     
-    // Managers
     public void addManager(Manager manager) {
         this.managers.add(manager);
         notifyObservers();
@@ -98,7 +89,6 @@ public class PersonStorage {
         return managers.stream().anyMatch(m -> m.getId() == id);
     }
     
-    // Narrators
     public void addNarrator(Narrator narrator) {
         this.narrators.add(narrator);
         notifyObservers();

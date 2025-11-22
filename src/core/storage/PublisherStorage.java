@@ -1,6 +1,3 @@
-/*
- * Almacenamiento de Editoriales
- */
 package core.storage;
 
 import java.util.ArrayList;
@@ -9,10 +6,6 @@ import java.util.stream.Collectors;
 import core.model.Publisher;
 import core.model.Observer;
 
-/**
- *
- * @author edangulo
- */
 public class PublisherStorage {
     
     private static PublisherStorage instance;
