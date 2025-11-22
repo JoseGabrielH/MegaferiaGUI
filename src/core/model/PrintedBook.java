@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package core;
+package core.model;
 
 import java.util.ArrayList;
 
@@ -27,6 +27,14 @@ public class PrintedBook extends Book {
 
     public int getCopies() {
         return copies;
+    }
+    
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        PrintedBook cloned = new PrintedBook(this.title, new ArrayList<>(this.authors), 
+                                            this.isbn, this.genre, this.format, 
+                                            this.value, this.publisher, this.pages, this.copies);
+        return cloned;
     }
     
 }

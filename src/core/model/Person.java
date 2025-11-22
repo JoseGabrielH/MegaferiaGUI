@@ -2,13 +2,13 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package core;
+package core.model;
 
 /**
  *
  * @author edangulo
  */
-public abstract class Person {
+public abstract class Person implements Cloneable {
     
     protected final long id;
     protected String firstname;
@@ -36,4 +36,6 @@ public abstract class Person {
         return firstname + " " + lastname;
     }
     
+    @Override
+    public abstract Object clone() throws CloneNotSupportedException;
 }

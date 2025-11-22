@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package core;
+package core.model;
 
 import java.util.ArrayList;
 
@@ -29,6 +29,14 @@ public class Audiobook extends Book {
 
     public Narrator getNarrador() {
         return narrador;
+    }
+    
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        Audiobook cloned = new Audiobook(this.title, new ArrayList<>(this.authors), 
+                                        this.isbn, this.genre, this.format, 
+                                        this.value, this.publisher, this.duration, this.narrador);
+        return cloned;
     }
     
 }

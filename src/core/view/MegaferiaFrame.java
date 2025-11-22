@@ -2,26 +2,60 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
-package core;
+package core.view;
 
 import com.formdev.flatlaf.FlatDarkLaf;
 import java.util.ArrayList;
 import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
+import core.controller.StandController;
+import core.controller.AuthorController;
+import core.controller.ManagerController;
+import core.controller.NarratorController;
+import core.controller.PublisherController;
+import core.controller.BookController;
+import core.controller.StandPurchaseController;
+import core.controller.QueryController;
+import core.storage.StandStorage;
+import core.storage.PersonStorage;
+import core.storage.PublisherStorage;
+import core.storage.BookStorage;
+import core.model.Stand;
+import core.model.Author;
+import core.model.Manager;
+import core.model.Narrator;
+import core.model.Book;
+import core.model.PrintedBook;
+import core.model.DigitalBook;
+import core.model.Audiobook;
+import core.model.Publisher;
+import core.model.Response;
+import core.model.Person;
+import core.model.Observer;
+import core.model.StatusCode;
 
 /**
  *
  * @author jjlora
  * @author edangulo
  */
-public class MegaferiaFrame extends javax.swing.JFrame {
+public class MegaferiaFrame extends javax.swing.JFrame implements Observer {
 
-    private ArrayList<Stand> stands;
-    private ArrayList<Author> authors;
-    private ArrayList<Manager> managers;
-    private ArrayList<Narrator> narrators;
-    private ArrayList<Publisher> publishers;
-    private ArrayList<Book> books;
+    // Controladores
+    private StandController standController;
+    private AuthorController authorController;
+    private ManagerController managerController;
+    private NarratorController narratorController;
+    private PublisherController publisherController;
+    private BookController bookController;
+    private StandPurchaseController standPurchaseController;
+    private QueryController queryController;
+    
+    // Almacenamiento
+    private StandStorage standStorage;
+    private PersonStorage personStorage;
+    private PublisherStorage publisherStorage;
+    private BookStorage bookStorage;
     
     /**
      * Creates new form MegaferiaFrame
@@ -29,12 +63,151 @@ public class MegaferiaFrame extends javax.swing.JFrame {
     public MegaferiaFrame() {
         initComponents();
         setLocationRelativeTo(null);
-        this.stands = new ArrayList<>();
-        this.authors = new ArrayList<>();
-        this.managers = new ArrayList<>();
-        this.narrators = new ArrayList<>();
-        this.publishers = new ArrayList<>();
-        this.books = new ArrayList<>();
+        
+        // Inicializar controladores
+        this.standController = new StandController();
+        this.authorController = new AuthorController();
+        this.managerController = new ManagerController();
+        this.narratorController = new NarratorController();
+        this.publisherController = new PublisherController();
+        this.bookController = new BookController();
+        this.standPurchaseController = new StandPurchaseController();
+        this.queryController = new QueryController();
+        
+        // Inicializar almacenamiento
+        this.standStorage = StandStorage.getInstance();
+        this.personStorage = PersonStorage.getInstance();
+        this.publisherStorage = PublisherStorage.getInstance();
+        this.bookStorage = BookStorage.getInstance();
+        
+        // Registrarse como observador para auto-actualización de tablas
+        this.standStorage.addObserver(this);
+        this.personStorage.addObserver(this);
+        this.publisherStorage.addObserver(this);
+        this.bookStorage.addObserver(this);
+    }
+
+    /**
+     * Implementación de Observer.update()
+     * Se ejecuta automáticamente cuando hay cambios en Storage
+     */
+    @Override
+    public void update() {
+        // Ejecutar en el Event Dispatch Thread de Swing
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                // Refrescar todas las tablas cuando Storage notifica cambios
+                refreshAllTables();
+            }
+        });
+    }
+
+    /**
+     * Recarga datos de todas las tablas desde Storage
+     */
+    private void refreshAllTables() {
+        try {
+            // Tabla de Stands
+            Response<java.util.List<Stand>> standsResp = queryController.getAllStands();
+            if (standsResp.getStatus() == StatusCode.OK) {
+                updateStandsTable(standsResp.getData());
+            }
+            
+            // Tabla de Autores - directamente de Storage
+            java.util.List<Person> allPersons = personStorage.getAllPersons();
+            java.util.List<Author> authors = new java.util.ArrayList<>();
+            for (Person p : allPersons) {
+                if (p instanceof Author) {
+                    authors.add((Author) p);
+                }
+            }
+            updateAuthorsTable(authors);
+            
+            // Tabla de Managers - directamente de Storage
+            java.util.List<Manager> managers = new java.util.ArrayList<>();
+            for (Person p : allPersons) {
+                if (p instanceof Manager) {
+                    managers.add((Manager) p);
+                }
+            }
+            updateManagersTable(managers);
+            
+            // Tabla de Libros
+            Response<java.util.List<Book>> booksResp = queryController.getAllBooks();
+            if (booksResp.getStatus() == StatusCode.OK) {
+                updateBooksTable(booksResp.getData());
+            }
+        } catch (Exception e) {
+            System.err.println("Error refrescando tablas: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Actualiza la tabla de Stands
+     */
+    private void updateStandsTable(java.util.List<Stand> stands) {
+        if (jTable1 == null) return;
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        model.setRowCount(0);
+        
+        for (Stand stand : stands) {
+            model.addRow(new Object[]{
+                stand.getId(),
+                stand.getPrice()
+            });
+        }
+    }
+
+    /**
+     * Actualiza la tabla de Autores
+     */
+    private void updateAuthorsTable(java.util.List<Author> authors) {
+        if (jTable2 == null) return;
+        DefaultTableModel model = (DefaultTableModel) jTable2.getModel();
+        model.setRowCount(0);
+        
+        for (Author author : authors) {
+            model.addRow(new Object[]{
+                author.getId(),
+                author.getFirstname(),
+                author.getLastname()
+            });
+        }
+    }
+
+    /**
+     * Actualiza la tabla de Managers
+     */
+    private void updateManagersTable(java.util.List<Manager> managers) {
+        if (jTable3 == null) return;
+        DefaultTableModel model = (DefaultTableModel) jTable3.getModel();
+        model.setRowCount(0);
+        
+        for (Manager manager : managers) {
+            model.addRow(new Object[]{
+                manager.getId(),
+                manager.getFirstname(),
+                manager.getLastname()
+            });
+        }
+    }
+
+    /**
+     * Actualiza la tabla de Libros
+     */
+    private void updateBooksTable(java.util.List<Book> books) {
+        if (jTable5 == null) return;
+        DefaultTableModel model = (DefaultTableModel) jTable5.getModel();
+        model.setRowCount(0);
+        
+        for (Book book : books) {
+            model.addRow(new Object[]{
+                book.getTitle(),
+                book.getIsbn(),
+                book.getClass().getSimpleName()
+            });
+        }
     }
 
     /**
@@ -1384,74 +1557,151 @@ public class MegaferiaFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jRadioButton2ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // TODO add your handling code here:
-        long id = Long.parseLong(jTextField2.getText());
-        double price = Double.parseDouble(jTextField1.getText());
-        
-        this.stands.add(new Stand(id, price));
-        
-        jComboBox7.addItem("" + id);
+        // Crear Stand
+        try {
+            long id = Long.parseLong(jTextField2.getText().trim());
+            double price = Double.parseDouble(jTextField1.getText().trim());
+            
+            Response<Stand> response = standController.createStand(id, price);
+            
+            if (response.isSuccess()) {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Éxito", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                jComboBox7.addItem("" + id);
+                jTextField1.setText("");
+                jTextField2.setText("");
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException e) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Ingrese valores válidos para ID y precio", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        // TODO add your handling code here:
-        long id = Long.parseLong(jTextField3.getText());
-        String firstname = jTextField4.getText();
-        String lastname = jTextField5.getText();
-        
-        this.authors.add(new Author(id, firstname, lastname));
-        
-        jComboBox3.addItem(id + " - " + firstname + " " + lastname);
-        jComboBox10.addItem(id + " - " + firstname + " " + lastname);
+        // Crear Autor
+        try {
+            long id = Long.parseLong(jTextField3.getText().trim());
+            String firstname = jTextField4.getText().trim();
+            String lastname = jTextField5.getText().trim();
+            
+            Response<Author> response = authorController.createAuthor(id, firstname, lastname);
+            
+            if (response.isSuccess()) {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Éxito", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                jComboBox3.addItem(id + " - " + firstname + " " + lastname);
+                jComboBox10.addItem(id + " - " + firstname + " " + lastname);
+                jTextField3.setText("");
+                jTextField4.setText("");
+                jTextField5.setText("");
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException e) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Ingrese un ID válido", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jButton16ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton16ActionPerformed
-        // TODO add your handling code here:
-        long id = Long.parseLong(jTextField3.getText());
-        String firstname = jTextField4.getText();
-        String lastname = jTextField5.getText();
-        
-        this.managers.add(new Manager(id, firstname, lastname));
-        
-        jComboBox1.addItem(id + " - " + firstname + " " + lastname);
+        // Crear Gerente
+        try {
+            long id = Long.parseLong(jTextField3.getText().trim());
+            String firstname = jTextField4.getText().trim();
+            String lastname = jTextField5.getText().trim();
+            
+            Response<Manager> response = managerController.createManager(id, firstname, lastname);
+            
+            if (response.isSuccess()) {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Éxito", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                jComboBox1.addItem(id + " - " + firstname + " " + lastname);
+                jTextField3.setText("");
+                jTextField4.setText("");
+                jTextField5.setText("");
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException e) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Ingrese un ID válido", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_jButton16ActionPerformed
 
     private void jButton17ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton17ActionPerformed
-        // TODO add your handling code here:
-        long id = Long.parseLong(jTextField3.getText());
-        String firstname = jTextField4.getText();
-        String lastname = jTextField5.getText();
-        
-        this.narrators.add(new Narrator(id, firstname, lastname));
-        
-        jComboBox6.addItem(id + " - " + firstname + " " + lastname);
+        // Crear Narrador
+        try {
+            long id = Long.parseLong(jTextField3.getText().trim());
+            String firstname = jTextField4.getText().trim();
+            String lastname = jTextField5.getText().trim();
+            
+            Response<Narrator> response = narratorController.createNarrator(id, firstname, lastname);
+            
+            if (response.isSuccess()) {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Éxito", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                jComboBox6.addItem(id + " - " + firstname + " " + lastname);
+                jTextField3.setText("");
+                jTextField4.setText("");
+                jTextField5.setText("");
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException e) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Ingrese un ID válido", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_jButton17ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        // TODO add your handling code here:
-        String nit = jTextField6.getText();
-        String name = jTextField7.getText();
-        String address = jTextField8.getText();
-        String[] managerData = jComboBox1.getItemAt(jComboBox1.getSelectedIndex()).split(" - ");
-        
-        long managerId = Long.parseLong(managerData[0]);
-        
-        Manager manager = null;
-        for (Manager manag : this.managers) {
-            if (manag.getId() == managerId) {
-                manager = manag;
+        // Crear Editorial
+        try {
+            String nit = jTextField6.getText().trim();
+            String name = jTextField7.getText().trim();
+            String address = jTextField8.getText().trim();
+            
+            String managerData = jComboBox1.getItemAt(jComboBox1.getSelectedIndex()).toString();
+            long managerId = Long.parseLong(managerData.split(" - ")[0]);
+            
+            Response<Publisher> response = publisherController.createPublisher(nit, name, address, managerId);
+            
+            if (response.isSuccess()) {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Éxito", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                jComboBox5.addItem(name + " (" + nit + ")");
+                jComboBox8.addItem(name + " (" + nit + ")");
+                jTextField6.setText("");
+                jTextField7.setText("");
+                jTextField8.setText("");
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
             }
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Error: " + e.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
         }
-        
-        this.publishers.add(new Publisher(nit, name, address, manager));
-        
-        jComboBox5.addItem(name + " (" + nit + ")");
-        jComboBox8.addItem(name + " (" + nit + ")");
     }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
-        // TODO add your handling code here:
-        String author = jComboBox3.getItemAt(jComboBox3.getSelectedIndex());
+        // Agregar Autor a Libro - Con validación de duplicados
+        String author = jComboBox3.getItemAt(jComboBox3.getSelectedIndex()).toString();
+        
+        // ✅ Validar que no existe duplicado
+        if (jTextArea2.getText().contains(author + "\n") || 
+            (jTextArea2.getText().trim().equals(author))) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Este autor ya fue agregado", "Advertencia", 
+                javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         jTextArea2.append(author + "\n");
     }//GEN-LAST:event_jButton8ActionPerformed
 
@@ -1462,68 +1712,83 @@ public class MegaferiaFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton9ActionPerformed
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        // TODO add your handling code here:
-        String title = jTextField9.getText();
-        String[] authorsData = jTextArea2.getText().split("\n");
-        String isbn = jTextField11.getText();
-        String genre = jComboBox2.getItemAt(jComboBox2.getSelectedIndex());
-        String format = jComboBox4.getItemAt(jComboBox4.getSelectedIndex());
-        double value = Double.parseDouble(jTextField12.getText());
-        String publisherData = jComboBox5.getItemAt(jComboBox5.getSelectedIndex());
-        
-        ArrayList<Author> authors = new ArrayList<>();
-        for (String authorData : authorsData) {
-            long authorId = Long.parseLong(authorData.split(" - ")[0]);
-            for (Author author : this.authors) {
-                if (author.getId() == authorId) {
-                    authors.add(author);
+        // Crear Libro
+        try {
+            String title = jTextField9.getText().trim();
+            String isbn = jTextField11.getText().trim();
+            String genre = jComboBox2.getItemAt(jComboBox2.getSelectedIndex()).toString().trim();
+            String format = jComboBox4.getItemAt(jComboBox4.getSelectedIndex()).toString().trim();
+            double value = Double.parseDouble(jTextField12.getText().trim());
+            
+            String publisherData = jComboBox5.getItemAt(jComboBox5.getSelectedIndex()).toString();
+            String publisherNit = publisherData.substring(publisherData.indexOf("(")+1, publisherData.indexOf(")"));
+            
+            // Obtener autores del TextArea
+            String[] authorStrings = jTextArea2.getText().trim().split("\n");
+            java.util.List<Long> authorIds = new java.util.ArrayList<>();
+            for (String auth : authorStrings) {
+                if (!auth.trim().isEmpty()) {
+                    authorIds.add(Long.parseLong(auth.split(" - ")[0]));
                 }
             }
-        }
-        
-        String publisherNit = publisherData.split(" ")[1].replace("(", "").replace(")", "");
-        
-        Publisher publisher = null;
-        for (Publisher publish : this.publishers) {
-            if (publish.getNit().equals(publisherNit)) {
-                publisher = publish;
-            }
-        }
-        
-        if (jRadioButton1.isSelected()) {
-            int pages = Integer.parseInt(jTextField13.getText());
-            int copies = Integer.parseInt(jTextField14.getText());
             
-            this.books.add(new PrintedBook(title, authors, isbn, genre, format, value, publisher, pages, copies));
-        }
-        if (jRadioButton2.isSelected()) {
-            String hyperlink = jTextField15.getText();
-            if (hyperlink.equals("")) {
-                this.books.add(new DigitalBook(title, authors, isbn, genre, format, value, publisher));
+            Response<?> response = null;
+            
+            if (jRadioButton1.isSelected()) {
+                int pages = Integer.parseInt(jTextField13.getText().trim());
+                int copies = Integer.parseInt(jTextField14.getText().trim());
+                response = bookController.createPrintedBook(title, authorIds, isbn, genre, format, value, publisherNit, pages, copies);
+            } else if (jRadioButton2.isSelected()) {
+                String hyperlink = jTextField15.getText().trim();
+                response = bookController.createDigitalBook(title, authorIds, isbn, genre, format, value, publisherNit, hyperlink);
+            } else if (jRadioButton3.isSelected()) {
+                int duration = Integer.parseInt(jTextField16.getText().trim());
+                String narratorData = jComboBox6.getItemAt(jComboBox6.getSelectedIndex()).toString();
+                long narratorId = Long.parseLong(narratorData.split(" - ")[0]);
+                response = bookController.createAudiobook(title, authorIds, isbn, genre, format, value, publisherNit, duration, narratorId);
             } else {
-                this.books.add(new DigitalBook(title, authors, isbn, genre, format, value, publisher, hyperlink));
-            }
-        }
-        if (jRadioButton3.isSelected()) {
-            int duration = Integer.parseInt(jTextField16.getText());
-            String[] narratorData = jComboBox6.getItemAt(jComboBox6.getSelectedIndex()).split(" - ");
-            
-            long narratorId = Long.parseLong(narratorData[0]);
-            
-            Narrator narrator = null;
-            for (Narrator narrat : this.narrators) {
-                if (narrat.getId() == narratorId) {
-                    narrator = narrat;
-                }
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    "Seleccione un tipo de libro", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                return;
             }
             
-            this.books.add(new Audiobook(title, authors, isbn, genre, format, value, publisher, duration, narrator));
+            if (response != null && response.isSuccess()) {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Éxito", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                jTextField9.setText("");
+                jTextField11.setText("");
+                jTextField12.setText("");
+                jTextField13.setText("");
+                jTextField14.setText("");
+                jTextField15.setText("");
+                jTextField16.setText("");
+                jTextArea2.setText("");
+            } else if (response != null) {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException e) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Ingrese valores numéricos válidos", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Error: " + e.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jButton10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton10ActionPerformed
-        // TODO add your handling code here:
-        String stand = jComboBox7.getItemAt(jComboBox7.getSelectedIndex());
+        // Agregar Stand a Compra - Con validación de duplicados
+        String stand = jComboBox7.getItemAt(jComboBox7.getSelectedIndex()).toString();
+        
+        // ✅ Validar que no existe duplicado
+        if (jTextArea3.getText().contains(stand + "\n") || 
+            (jTextArea3.getText().trim().equals(stand))) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Este stand ya fue agregado", "Advertencia", 
+                javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         jTextArea3.append(stand + "\n");
     }//GEN-LAST:event_jButton10ActionPerformed
 
@@ -1534,8 +1799,18 @@ public class MegaferiaFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton11ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
-        // TODO add your handling code here:
-        String publisher = jComboBox8.getItemAt(jComboBox8.getSelectedIndex());
+        // Agregar Editorial a Compra - Con validación de duplicados
+        String publisher = jComboBox8.getItemAt(jComboBox8.getSelectedIndex()).toString();
+        
+        // ✅ Validar que no existe duplicado
+        if (jTextArea1.getText().contains(publisher + "\n") || 
+            (jTextArea1.getText().trim().equals(publisher))) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Esta editorial ya fue agregada", "Advertencia", 
+                javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         jTextArea1.append(publisher + "\n");
     }//GEN-LAST:event_jButton5ActionPerformed
 
@@ -1546,130 +1821,131 @@ public class MegaferiaFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton7ActionPerformed
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
-        // TODO add your handling code here:
-        String[] standIds = jTextArea3.getText().split("\n");
-        String[] publishersData = jTextArea1.getText().split("\n");
-        
-        ArrayList<Stand> stands = new ArrayList<>();
-        for (String standId : standIds) {
-            for (Stand stand : this.stands) {
-                if (stand.getId() == Long.parseLong(standId)) {
-                    stands.add(stand);
+        // Comprar Stands
+        try {
+            String[] standIds = jTextArea3.getText().trim().split("\n");
+            String[] publisherNits = jTextArea1.getText().trim().split("\n");
+            
+            java.util.List<Long> standsToProcess = new java.util.ArrayList<>();
+            java.util.List<String> publishersToProcess = new java.util.ArrayList<>();
+            
+            for (String standId : standIds) {
+                if (!standId.trim().isEmpty()) {
+                    standsToProcess.add(Long.parseLong(standId.trim()));
                 }
             }
-        }
-        
-        ArrayList<Publisher> publishers = new ArrayList<>();
-        for (String publisherData : publishersData) {
-            String publisherNit = publisherData.split(" ")[1].replace("(", "").replace(")", "");
-            for (Publisher publisher : this.publishers) {
-                if (publisher.getNit().equals(publisherNit)) {
-                    publishers.add(publisher);
+            
+            for (String publisherNit : publisherNits) {
+                if (!publisherNit.trim().isEmpty()) {
+                    publishersToProcess.add(publisherNit.trim());
                 }
             }
-        }
-        
-        for (Stand stand : stands) {
-            for (Publisher publisher : publishers) {
-                stand.addPublisher(publisher);
-                publisher.addStand(stand);
+            
+            Response<String> response = standPurchaseController.purchaseStands(standsToProcess, publishersToProcess);
+            
+            if (response.isSuccess()) {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Éxito", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                jTextArea1.setText("");
+                jTextArea3.setText("");
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    response.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
             }
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Error: " + e.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_jButton6ActionPerformed
 
     private void jButton12ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton12ActionPerformed
-        // TODO add your handling code here:
-        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-        model.setRowCount(0);
-        for (Publisher publisher : this.publishers) {
-            model.addRow(new Object[]{publisher.getNit(), publisher.getName(), publisher.getAddress(), publisher.getManager().getFullname(), publisher.getStandQuantity()});
+        // Consultar Editoriales
+        Response<java.util.List<Publisher>> response = queryController.getAllPublishers();
+        if (response.isSuccess()) {
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0);
+            for (Publisher publisher : response.getData()) {
+                model.addRow(new Object[]{publisher.getNit(), publisher.getName(), publisher.getAddress(), publisher.getManager().getFullname(), publisher.getStandQuantity()});
+            }
         }
     }//GEN-LAST:event_jButton12ActionPerformed
 
     private void jButton13ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton13ActionPerformed
-        // TODO add your handling code here:
-        DefaultTableModel model = (DefaultTableModel) jTable2.getModel();
-        model.setRowCount(0);
-        for (Author author : this.authors) {
-            model.addRow(new Object[]{author.getId(), author.getFullname(), "Autor", "-", author.getBookQuantity()});
-        }
-        for (Manager manager : this.managers) {
-            model.addRow(new Object[]{manager.getId(), manager.getFullname(), "Gerente", manager.getPublisher().getName(), 0});
-        }
-        for (Narrator narrator : this.narrators) {
-            model.addRow(new Object[]{narrator.getId(), narrator.getFullname(), "Narrador", "-", narrator.getBookQuantity()});
+        // Consultar Personas
+        Response<java.util.List<Person>> response = queryController.getAllPersons();
+        if (response.isSuccess()) {
+            DefaultTableModel model = (DefaultTableModel) jTable2.getModel();
+            model.setRowCount(0);
+            for (Person person : response.getData()) {
+                if (person instanceof Author) {
+                    Author author = (Author) person;
+                    model.addRow(new Object[]{author.getId(), author.getFullname(), "Autor", "-", author.getBookQuantity()});
+                } else if (person instanceof Manager) {
+                    Manager manager = (Manager) person;
+                    String publisherName = manager.getPublisher() != null ? manager.getPublisher().getName() : "-";
+                    model.addRow(new Object[]{manager.getId(), manager.getFullname(), "Gerente", publisherName, 0});
+                } else if (person instanceof Narrator) {
+                    Narrator narrator = (Narrator) person;
+                    model.addRow(new Object[]{narrator.getId(), narrator.getFullname(), "Narrador", "-", narrator.getBookQuantity()});
+                }
+            }
         }
     }//GEN-LAST:event_jButton13ActionPerformed
 
     private void jButton14ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton14ActionPerformed
-        // TODO add your handling code here:
-        DefaultTableModel model = (DefaultTableModel) jTable3.getModel();
-        model.setRowCount(0);
-        for (Stand stand : this.stands) {
-            String publishers = "";
-            if (stand.getPublisherQuantity() > 0) {
-                publishers += stand.getPublishers().get(0).getName();
-                for (int i = 1; i < stand.getPublisherQuantity(); i++) {
-                    publishers += (", " + stand.getPublishers().get(i).getName());
+        // Consultar Stands
+        Response<java.util.List<Stand>> response = queryController.getAllStands();
+        if (response.isSuccess()) {
+            DefaultTableModel model = (DefaultTableModel) jTable3.getModel();
+            model.setRowCount(0);
+            for (Stand stand : response.getData()) {
+                String publishers = "";
+                if (stand.getPublisherQuantity() > 0) {
+                    publishers += stand.getPublishers().get(0).getName();
+                    for (int i = 1; i < stand.getPublisherQuantity(); i++) {
+                        publishers += (", " + stand.getPublishers().get(i).getName());
+                    }
                 }
+                model.addRow(new Object[]{stand.getId(), stand.getPrice(), stand.getPublisherQuantity() > 0 ? "Si" : "No", publishers});
             }
-            model.addRow(new Object[]{stand.getId(), stand.getPrice(), stand.getPublisherQuantity() > 0 ? "Si" : "No", publishers});
         }
     }//GEN-LAST:event_jButton14ActionPerformed
 
     private void jButton15ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton15ActionPerformed
-        // TODO add your handling code here:
-        String search = jComboBox9.getItemAt(jComboBox9.getSelectedIndex());
+        // Consultar Libros
+        String search = jComboBox9.getItemAt(jComboBox9.getSelectedIndex()).toString();
         
         DefaultTableModel model = (DefaultTableModel) jTable4.getModel();
         model.setRowCount(0);
         
+        Response<?> response = null;
+        
         if (search.equals("Libros Impresos")) {
-            for (Book book : this.books) {
-                if (book instanceof PrintedBook printedBook) {
-                    String authors = printedBook.getAuthors().get(0).getFullname();
-                    for (int i = 1; i < printedBook.getAuthors().size(); i++) {
-                        authors += (", " + printedBook.getAuthors().get(i).getFullname());
-                    }
-                    model.addRow(new Object[]{printedBook.getTitle(), authors, printedBook.getIsbn(), printedBook.getGenre(), printedBook.getFormat(), printedBook.getValue(), printedBook.getPublisher().getName(), printedBook.getCopies(), printedBook.getPages(), "-", "-", "-"});
-                }
-            }
+            response = queryController.getAllPrintedBooks();
+        } else if (search.equals("Libros Digitales")) {
+            response = queryController.getAllDigitalBooks();
+        } else if (search.equals("Audiolibros")) {
+            response = queryController.getAllAudiobooks();
+        } else if (search.equals("Todos los Libros")) {
+            response = queryController.getAllBooks();
         }
-        if (search.equals("Libros Digitales")) {
-            for (Book book : this.books) {
-                if (book instanceof DigitalBook digitalBook) {
-                    String authors = digitalBook.getAuthors().get(0).getFullname();
-                    for (int i = 1; i < digitalBook.getAuthors().size(); i++) {
-                        authors += (", " + digitalBook.getAuthors().get(i).getFullname());
-                    }
-                    model.addRow(new Object[]{digitalBook.getTitle(), authors, digitalBook.getIsbn(), digitalBook.getGenre(), digitalBook.getFormat(), digitalBook.getValue(), digitalBook.getPublisher().getName(), "-", "-", digitalBook.hasHyperlink() ? digitalBook.getHyperlink() : "No", "-", "-"});
-                }
-            }
-        }
-        if (search.equals("Audiolibros")) {
-            for (Book book : this.books) {
-                if (book instanceof Audiobook audiobook) {
-                    String authors = audiobook.getAuthors().get(0).getFullname();
-                    for (int i = 1; i < audiobook.getAuthors().size(); i++) {
-                        authors += (", " + audiobook.getAuthors().get(i).getFullname());
-                    }
-                    model.addRow(new Object[]{audiobook.getTitle(), authors, audiobook.getIsbn(), audiobook.getGenre(), audiobook.getFormat(), audiobook.getValue(), audiobook.getPublisher().getName(), "-", "-", "-", audiobook.getNarrador().getFullname(), audiobook.getDuration()});
-                }
-            }
-        }
-        if (search.equals("Todos los Libros")) {
-            for (Book book : this.books) { 
+        
+        if (response != null && response.isSuccess()) {
+            @SuppressWarnings("unchecked")
+            Response<java.util.List<Book>> bookResponse = (Response<java.util.List<Book>>) response;
+            for (Book book : bookResponse.getData()) {
                 String authors = book.getAuthors().get(0).getFullname();
                 for (int i = 1; i < book.getAuthors().size(); i++) {
                     authors += (", " + book.getAuthors().get(i).getFullname());
                 }
-                if (book instanceof PrintedBook printedBook) {
+                if (book instanceof PrintedBook) {
+                    PrintedBook printedBook = (PrintedBook) book;
                     model.addRow(new Object[]{printedBook.getTitle(), authors, printedBook.getIsbn(), printedBook.getGenre(), printedBook.getFormat(), printedBook.getValue(), printedBook.getPublisher().getName(), printedBook.getCopies(), printedBook.getPages(), "-", "-", "-"});
-                }
-                if (book instanceof DigitalBook digitalBook) {
+                } else if (book instanceof DigitalBook) {
+                    DigitalBook digitalBook = (DigitalBook) book;
                     model.addRow(new Object[]{digitalBook.getTitle(), authors, digitalBook.getIsbn(), digitalBook.getGenre(), digitalBook.getFormat(), digitalBook.getValue(), digitalBook.getPublisher().getName(), "-", "-", digitalBook.hasHyperlink() ? digitalBook.getHyperlink() : "No", "-", "-"});
-                }
-                if (book instanceof Audiobook audiobook) {
+                } else if (book instanceof Audiobook) {
+                    Audiobook audiobook = (Audiobook) book;
                     model.addRow(new Object[]{audiobook.getTitle(), authors, audiobook.getIsbn(), audiobook.getGenre(), audiobook.getFormat(), audiobook.getValue(), audiobook.getPublisher().getName(), "-", "-", "-", audiobook.getNarrador().getFullname(), audiobook.getDuration()});
                 }
             }
@@ -1677,57 +1953,62 @@ public class MegaferiaFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton15ActionPerformed
 
     private void jButton18ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton18ActionPerformed
-        // TODO add your handling code here:
-        String[] authorData = jComboBox10.getItemAt(jComboBox10.getSelectedIndex()).split(" - ");
-        long authorId = Long.parseLong(authorData[0]);
-        
-        Author author = null;
-        for (Author auth : this.authors) {
-            if (auth.getId() == authorId) {
-                author = auth;
+        // Buscar libros por autor
+        try {
+            String[] authorData = jComboBox10.getItemAt(jComboBox10.getSelectedIndex()).toString().split(" - ");
+            long authorId = Long.parseLong(authorData[0]);
+            
+            Response<java.util.List<Book>> response = queryController.getBooksByAuthor(authorId);
+            
+            if (response.isSuccess()) {
+                DefaultTableModel model = (DefaultTableModel) jTable5.getModel();
+                model.setRowCount(0);
+                for (Book book : response.getData()) {
+                    String authors = book.getAuthors().get(0).getFullname();
+                    for (int i = 1; i < book.getAuthors().size(); i++) {
+                        authors += (", " + book.getAuthors().get(i).getFullname());
+                    }
+                    if (book instanceof PrintedBook) {
+                        PrintedBook printedBook = (PrintedBook) book;
+                        model.addRow(new Object[]{printedBook.getTitle(), authors, printedBook.getIsbn(), printedBook.getGenre(), printedBook.getFormat(), printedBook.getValue(), printedBook.getPublisher().getName(), printedBook.getCopies(), printedBook.getPages(), "-", "-", "-"});
+                    } else if (book instanceof DigitalBook) {
+                        DigitalBook digitalBook = (DigitalBook) book;
+                        model.addRow(new Object[]{digitalBook.getTitle(), authors, digitalBook.getIsbn(), digitalBook.getGenre(), digitalBook.getFormat(), digitalBook.getValue(), digitalBook.getPublisher().getName(), "-", "-", digitalBook.hasHyperlink() ? digitalBook.getHyperlink() : "No", "-", "-"});
+                    } else if (book instanceof Audiobook) {
+                        Audiobook audiobook = (Audiobook) book;
+                        model.addRow(new Object[]{audiobook.getTitle(), authors, audiobook.getIsbn(), audiobook.getGenre(), audiobook.getFormat(), audiobook.getValue(), audiobook.getPublisher().getName(), "-", "-", "-", audiobook.getNarrador().getFullname(), audiobook.getDuration()});
+                    }
+                }
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this, response.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
             }
-        }
-        
-        DefaultTableModel model = (DefaultTableModel) jTable5.getModel();
-        model.setRowCount(0);
-        
-        for (Book book : author.getBooks()) { 
-            String authors = book.getAuthors().get(0).getFullname();
-            for (int i = 1; i < book.getAuthors().size(); i++) {
-                authors += (", " + book.getAuthors().get(i).getFullname());
-            }
-            if (book instanceof PrintedBook printedBook) {
-                model.addRow(new Object[]{printedBook.getTitle(), authors, printedBook.getIsbn(), printedBook.getGenre(), printedBook.getFormat(), printedBook.getValue(), printedBook.getPublisher().getName(), printedBook.getCopies(), printedBook.getPages(), "-", "-", "-"});
-            }
-            if (book instanceof DigitalBook digitalBook) {
-                model.addRow(new Object[]{digitalBook.getTitle(), authors, digitalBook.getIsbn(), digitalBook.getGenre(), digitalBook.getFormat(), digitalBook.getValue(), digitalBook.getPublisher().getName(), "-", "-", digitalBook.hasHyperlink() ? digitalBook.getHyperlink() : "No", "-", "-"});
-            }
-            if (book instanceof Audiobook audiobook) {
-                model.addRow(new Object[]{audiobook.getTitle(), authors, audiobook.getIsbn(), audiobook.getGenre(), audiobook.getFormat(), audiobook.getValue(), audiobook.getPublisher().getName(), "-", "-", "-", audiobook.getNarrador().getFullname(), audiobook.getDuration()});
-            }
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_jButton18ActionPerformed
 
     private void jButton19ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton19ActionPerformed
-        // TODO add your handling code here:
-        String format = jComboBox11.getItemAt(jComboBox11.getSelectedIndex());
+        // Buscar libros por formato
+        String format = jComboBox11.getItemAt(jComboBox11.getSelectedIndex()).toString();
         
-        DefaultTableModel model = (DefaultTableModel) jTable5.getModel();
-        model.setRowCount(0);
+        Response<java.util.List<Book>> response = queryController.getBooksByFormat(format);
         
-        for (Book book : this.books) { 
-            if (book.getFormat().equals(format)) {
+        if (response.isSuccess()) {
+            DefaultTableModel model = (DefaultTableModel) jTable5.getModel();
+            model.setRowCount(0);
+            for (Book book : response.getData()) {
                 String authors = book.getAuthors().get(0).getFullname();
                 for (int i = 1; i < book.getAuthors().size(); i++) {
                     authors += (", " + book.getAuthors().get(i).getFullname());
                 }
-                if (book instanceof PrintedBook printedBook) {
+                if (book instanceof PrintedBook) {
+                    PrintedBook printedBook = (PrintedBook) book;
                     model.addRow(new Object[]{printedBook.getTitle(), authors, printedBook.getIsbn(), printedBook.getGenre(), printedBook.getFormat(), printedBook.getValue(), printedBook.getPublisher().getName(), printedBook.getCopies(), printedBook.getPages(), "-", "-", "-"});
-                }
-                if (book instanceof DigitalBook digitalBook) {
+                } else if (book instanceof DigitalBook) {
+                    DigitalBook digitalBook = (DigitalBook) book;
                     model.addRow(new Object[]{digitalBook.getTitle(), authors, digitalBook.getIsbn(), digitalBook.getGenre(), digitalBook.getFormat(), digitalBook.getValue(), digitalBook.getPublisher().getName(), "-", "-", digitalBook.hasHyperlink() ? digitalBook.getHyperlink() : "No", "-", "-"});
-                }
-                if (book instanceof Audiobook audiobook) {
+                } else if (book instanceof Audiobook) {
+                    Audiobook audiobook = (Audiobook) book;
                     model.addRow(new Object[]{audiobook.getTitle(), authors, audiobook.getIsbn(), audiobook.getGenre(), audiobook.getFormat(), audiobook.getValue(), audiobook.getPublisher().getName(), "-", "-", "-", audiobook.getNarrador().getFullname(), audiobook.getDuration()});
                 }
             }
@@ -1735,45 +2016,24 @@ public class MegaferiaFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton19ActionPerformed
 
     private void jButton20ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton20ActionPerformed
-        // TODO add your handling code here:
-        ArrayList<Author> authorsMax = new ArrayList<>();
-        int maxPublishers = -1;
-        for (Author author : this.authors) {
-            if (author.getPublisherQuantity() > maxPublishers) {
-                maxPublishers = author.getPublisherQuantity();
-                authorsMax.clear();
-                authorsMax.add(author);
-            } else if (author.getPublisherQuantity() == maxPublishers) {
-                authorsMax.add(author);
+        // Autores con más libros en diferentes editoriales
+        Response<java.util.List<Author>> response = queryController.getAuthorsWithMostPublishers();
+        
+        if (response.isSuccess()) {
+            DefaultTableModel model = (DefaultTableModel) jTable6.getModel();
+            model.setRowCount(0);
+            
+            if (response.getData().isEmpty()) {
+                javax.swing.JOptionPane.showMessageDialog(this, 
+                    "No hay autores con libros en diferentes editoriales", "Información", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                int maxPublishers = response.getData().get(0).getPublisherQuantity();
+                for (Author author : response.getData()) {
+                    model.addRow(new Object[]{author.getId(), author.getFullname(), maxPublishers});
+                }
             }
-        }
-        
-        DefaultTableModel model = (DefaultTableModel) jTable6.getModel();
-        model.setRowCount(0);
-        
-        for (Author author : authorsMax) {
-            model.addRow(new Object[]{author.getId(), author.getFullname(), maxPublishers});
         }
     }//GEN-LAST:event_jButton20ActionPerformed
-
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        System.setProperty("flatlaf.useNativeLibrary", "false");
-        
-        try {
-            UIManager.setLookAndFeel(new FlatDarkLaf());
-        } catch (Exception ex) {
-            System.err.println("Failed to initialize LaF");
-        }
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new MegaferiaFrame().setVisible(true);
-            }
-        });
-    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;

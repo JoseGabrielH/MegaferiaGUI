@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package core;
+package core.model;
 
 import java.util.ArrayList;
 
@@ -10,7 +10,7 @@ import java.util.ArrayList;
  *
  * @author edangulo
  */
-public class Publisher {
+public class Publisher implements Cloneable {
     
     private final String nit;
     private String name;
@@ -56,6 +56,14 @@ public class Publisher {
     
     public void addStand(Stand stand) {
         this.stands.add(stand);
+    }
+    
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        Publisher cloned = new Publisher(this.nit, this.name, this.address, this.manager);
+        cloned.books = new ArrayList<>(this.books);
+        cloned.stands = new ArrayList<>(this.stands);
+        return cloned;
     }
     
 }

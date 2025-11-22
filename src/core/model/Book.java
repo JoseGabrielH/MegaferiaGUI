@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package core;
+package core.model;
 
 import java.util.ArrayList;
 
@@ -10,7 +10,7 @@ import java.util.ArrayList;
  *
  * @author edangulo
  */
-public abstract class Book {
+public abstract class Book implements Cloneable {
     
     protected String title;
     protected ArrayList<Author> authors;
@@ -63,4 +63,6 @@ public abstract class Book {
         return publisher;
     }
     
+    @Override
+    public abstract Object clone() throws CloneNotSupportedException;
 }

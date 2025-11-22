@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package core;
+package core.model;
 
 import java.util.ArrayList;
 
@@ -39,6 +39,13 @@ public class Author extends Person {
             }
         }
         return publishers.size();
+    }
+    
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        Author cloned = new Author(this.id, this.firstname, this.lastname);
+        cloned.books = new ArrayList<>(this.books);
+        return cloned;
     }
     
 }
