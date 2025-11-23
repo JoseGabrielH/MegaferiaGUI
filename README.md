@@ -1,3 +1,6 @@
+# Carlos Verbel Garcia - 2462 
+# Jose Herazo Dovale - 2462
+# Jorge Gaitan - 2461
 # Megaferia - Refactorización a Arquitectura MVC con SOLID
 
 ## Descripción del Proyecto
